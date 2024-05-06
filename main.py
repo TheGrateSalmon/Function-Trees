@@ -19,48 +19,76 @@ import random
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from gen import generate_random_node
-from function_tree import Node, FunctionTree
+from function_tree import AdditionNode, SubtractionNode, MultiplicationNode, DivisionNode
+from function_tree import ConstantNode, MonomialNode, \
+                          NaturalExpNode, ExpNode, NaturalLogNode, LogNode, \
+                          TrigNode, InverseTrigNode
+from function_tree import FunctionTree
 
 
-def generate_random_function_tree(max_height: int=2):
-    '''Generates a feasible function tree.
+def random_node(node_category: str, weights=None):
+    """Generates a random node.
+
+    Args
+    ----
+    node_category: str
+        The category of the node. It can be either 'operator' or 'function'.
+    weights: list
+        The weights of the different node types. The default value is None.
+    """
+    OPERATOR_TYPE_MAP = {'ADDITION': AdditionNode,
+                         'SUBTRACTION': SubtractionNode,
+                         'MULTIPLICATION': MultiplicationNode,
+                         'DIVISION': DivisionNode}
+    FUNCTION_TYPE_MAP = {'CONSTANT': ConstantNode,
+                         'MONOMIAL': MonomialNode,
+                         'NATURAL EXP': NaturalExpNode,
+                         'EXP': ExpNode,
+                         'NATURAL LOG': NaturalLogNode,
+                         'LOG': LogNode,
+                         'TRIG': TrigNode,
+                         'INVERSE TRIG': InverseTrigNode}
+
+    node_type_maps = {'operator': OPERATOR_TYPE_MAP, 'function': FUNCTION_TYPE_MAP}
+    if node_category not in node_type_maps:
+        raise ValueError(f'{node_type} is an invalid node type.')
+    node_type_map = node_type_maps[node_category]
+    node_type = random.choices(list(node_type_map.keys()), weights=weights)[0]
+    return node_type_map[node_type](node_type)
+
+
+def random_function_tree(max_height: int=2):
+    """Generates a feasible function tree.
     
+    Args
+    ----
     max_height: int
         The height of the function tree, also the length of a longest path from
         the root to a leaf. Default value is 2.
-    '''
+    """
     if max_height <= 0:
         raise ValueError(f'{max_height} is not a valid value for max_depth. It must be greater than 0.')
     if max_height == 1:
-        return generate_random_node('function')
+        return random_node('function')
 
     # generate a random node
-    node_type = random.choice(['operator', 'function'])
-    root = generate_random_node(node_type)
+    node_category = random.choice(['operator', 'function'])
+    root = random_node(node_category)
 
     # every non-leaf node has a child
-    root.left = generate_random_function_tree(max_height - 1)
+    root.left = random_function_tree(max_height - 1)
     root.left.parent = root
-    if node_type == 'operator':
+    if node_category == 'operator':
         # operator nodes have two children
-        root.right = generate_random_function_tree(max_height - 1)
+        root.right = random_function_tree(max_height - 1)
         root.right.parent = root
         root.left.sibling, root.right.sibling = root.right, root.left
-
-        # LaTeX for DIVISION node
-        if root.node_type == 'DIVISION':
-            root.latex = f'\\frac{{ {root.left.latex} }}{{ {root.right.latex} }}'
-        else:
-            root.latex = f'\\left( {root.left.latex} {root.latex} {root.right.latex} \\right)'
-    else:
-        root.latex = root.latex.replace('x', root.left.latex)
     return root
 
 
 def main():
-    function_tree = FunctionTree(generate_random_function_tree(max_height=4))
-    print(function_tree.latex)
+    function_tree = FunctionTree(random_function_tree(max_height=4))
+    print(function_tree.latex())
     function_tree.visualize()
 
 
